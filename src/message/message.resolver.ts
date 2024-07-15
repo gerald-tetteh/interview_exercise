@@ -10,6 +10,7 @@ import {
 import { ObjectId } from 'mongodb';
 import {
   ChatMessage,
+  FilteredByTagChatMessages,
   PaginatedChatMessages,
   Poll,
   RichMessageContent,
@@ -21,6 +22,8 @@ import {
   LikeMessageDto,
   ResolveMessageDto,
   ReactionDto,
+  UpdateMessageTagsDto,
+  GetMessagesByTagsDto,
 } from './models/message.dto';
 import { MessageLogic } from './message.logic';
 import {
@@ -90,6 +93,18 @@ export class MessageResolver {
     );
   }
 
+  @Query(() => [FilteredByTagChatMessages])
+  @UseGuards(GqlAuthGuard)
+  async getChatMessagesByTags(
+    @Args('getMessagesByTagsDto') getMessagesByTagsDto: GetMessagesByTagsDto,
+    @AuthenticatedUser() authenticatedUser: IAuthenticatedUser,
+  ): Promise<FilteredByTagChatMessages[]> {
+    return await this.messageLogic.getMessagesByTags(
+      getMessagesByTagsDto,
+      authenticatedUser,
+    );
+  }
+
   @Mutation(() => ChatMessage)
   @UseGuards(GqlAuthGuard)
   async deleteConversationMessage(
@@ -130,6 +145,18 @@ export class MessageResolver {
     @AuthenticatedUser() authenticatedUser: IAuthenticatedUser,
   ): Promise<ChatMessage> {
     return await this.messageLogic.like(likeMessageDto, authenticatedUser);
+  }
+
+  @Mutation(() => ChatMessage)
+  @UseGuards(GqlAuthGuard)
+  async updateConversationMessageTags(
+    @Args('updateMessageTagsDto') updateMessageTagsDto: UpdateMessageTagsDto,
+    @AuthenticatedUser() authenticatedUser: IAuthenticatedUser,
+  ): Promise<ChatMessage> {
+    return await this.messageLogic.updateTags(
+      updateMessageTagsDto,
+      authenticatedUser,
+    );
   }
 
   @Mutation(() => ChatMessage)

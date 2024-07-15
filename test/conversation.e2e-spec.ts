@@ -216,6 +216,7 @@ describe('Conversation', () => {
       resolved: false,
       created: expect.anything(),
       deleted: false,
+      tags: [],
     });
   });
 

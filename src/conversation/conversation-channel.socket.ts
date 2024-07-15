@@ -7,6 +7,7 @@ import {
 import { SocketChatMessage } from '../message/models/message.entity';
 import { ObjectId } from 'mongodb';
 import { User } from '../user/models/user.model';
+import { Tag } from '../utils/dto.utils';
 
 export class SendMessageEvent implements BaseEventType {
   public name = 'send-message';
@@ -23,6 +24,11 @@ export class LikeMessageEvent implements BaseEventType {
 export class UnlikeMessageEvent implements BaseEventType {
   public name = 'unlike-message';
   constructor(public message: { userId: ObjectId; messageId: ObjectId }) {}
+}
+
+export class UpdateMessageTagsEvent implements BaseEventType {
+  public name = 'update-message-tags';
+  constructor(public message: { messageId: ObjectId; tags: Tag[] }) {}
 }
 
 export class ReactedMessageEvent implements BaseEventType {
@@ -87,7 +93,8 @@ type EventType =
   | PinMessageEvent
   | UnpinMessageEvent
   | UserLeftConversationEvent
-  | UserJoinedConversationEvent;
+  | UserJoinedConversationEvent
+  | UpdateMessageTagsEvent;
 
 @Injectable()
 export class ConversationChannel extends Channel<EventType> {

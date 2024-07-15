@@ -19,10 +19,7 @@ import { ConversationLogic } from './conversation.logic';
 import { ConversationMigrationLogic } from '../migrations/conversation/conversation.migration.logic';
 import { AddMemberDTO } from './models/AddMember.dto';
 import { ChatConversation } from './models/ChatConversation.entity';
-import {
-  CreateChatConversationDto,
-  Tag,
-} from './models/CreateChatConversation.dto';
+import { CreateChatConversationDto } from './models/CreateChatConversation.dto';
 import { BlockUserDTO } from './models/blockUser.dto';
 import { MigratePermissionsDTO } from './models/migratePermissions.dto';
 import { UnreadCountInput, UnreadCountOutput } from './models/unreadCount.dto';
@@ -34,6 +31,7 @@ import {
 } from './models/messagesFilterInput';
 import { isDateDifferenceWithin7Days } from '../message/utils/message.helper';
 import { Response } from 'express';
+import { Tag } from '../utils/dto.utils';
 
 @Controller('conversation')
 export class ConversationController {

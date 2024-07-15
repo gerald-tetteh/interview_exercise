@@ -19,10 +19,7 @@ import { LastMessageInput, LastMessageOutput } from './models/lastMessage.dto';
 import { LastRead } from './models/LastRead.entity';
 import { LastReadInput } from './models/LastReadInput.dto';
 import { ConversationData } from './conversation.data';
-import {
-  CreateChatConversationDto,
-  Tag,
-} from './models/CreateChatConversation.dto';
+import { CreateChatConversationDto } from './models/CreateChatConversation.dto';
 import { AddMemberDTO } from './models/AddMember.dto';
 import { pinMessageDTO, unpinMessageDTO } from './models/pinnedMessages.dto';
 import { ChatConversationModel } from './models/conversation.model';
@@ -42,6 +39,7 @@ import {
   MessageGroupedByConversationOutput,
   MessagesFilterInput,
 } from './models/messagesFilterInput';
+import { Tag } from '../utils/dto.utils';
 
 export interface IConversationLogic {
   getConversation(

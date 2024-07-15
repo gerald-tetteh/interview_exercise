@@ -8,6 +8,7 @@ import {
   GifType,
   MessageDto,
   PollDto,
+  UpdateMessageTagsDto,
 } from './models/message.dto';
 import {
   ConversationChannel,
@@ -19,6 +20,7 @@ import {
   UnReactedMessageEvent,
   UnlikeMessageEvent,
   UnresolveMessageEvent,
+  UpdateMessageTagsEvent,
 } from '../conversation/conversation-channel.socket';
 import { PermissionsService } from '../permissions/permissions.service';
 import { ObjectID, ObjectId } from 'mongodb';
@@ -59,7 +61,7 @@ import {
 } from '../conversation/models/lastMessage.dto';
 import { Permission } from '../conversation/models/Permission.dto';
 import { LastReadInput } from '../conversation/models/LastReadInput.dto';
-import { Tag } from '../conversation/models/CreateChatConversation.dto';
+import { Tag, TagType } from '../utils/dto.utils';
 
 const UNAUTHORISED_USER = new ObjectId('321b1a570ff321b1a570ff01');
 const validUser: IAuthenticatedUser = {
@@ -78,6 +80,13 @@ const USER_ID_BLOCKED = new ObjectId('abcdef123456abcdef000001');
 const USER_ID_BLOCKING = new ObjectId('abcdef123456abcdef000002');
 const SCOPE = 'university';
 const SCOPE_ID = new ObjectId('abcdef123456abcdef000003');
+const tag1 = new Tag();
+tag1.id = 'tag1';
+tag1.type = TagType.subTopic;
+const tag2 = new Tag();
+tag2.id = 'tag2';
+tag2.type = TagType.subTopic;
+const mockTags = [tag1, tag2];
 const mockGiphyContent = {
   giphy: {
     type: GifType.Gif,
@@ -131,6 +140,7 @@ const replyMessageModel: ChatMessageModel = {
   deleted: false,
   resolved: false,
   likes: [],
+  tags: [],
   likesCount: 0,
 };
 
@@ -161,6 +171,7 @@ describe('MessageLogic', () => {
     deleted: false,
     resolved: false,
     likes: [],
+    tags: [],
     likesCount: 0,
   };
 
@@ -191,6 +202,7 @@ describe('MessageLogic', () => {
     deleted: false,
     resolved: false,
     likes: [],
+    tags: [],
     likesCount: 0,
     richContent: {
       reply: {
@@ -198,6 +210,23 @@ describe('MessageLogic', () => {
         richContent: mockGiphyContent,
       },
     },
+  };
+
+  const updateTagsMessage = {
+    ...mockCreatedMessage,
+    tags: mockTags,
+  };
+
+  const getMessagesByTagsResult = {
+    _id: ["tag1", "tag2"],
+    messages: [
+      {
+        message: "Hello world",
+        senderId: senderId.toHexString(),
+        tags: mockTags,
+      },
+    ],
+    tagId: ["tag1", "tag2"],
   };
 
   const mockUser = {
@@ -240,6 +269,10 @@ describe('MessageLogic', () => {
         return mockGifMessage;
       }
       return mockCreatedMessage;
+    }
+
+    updateTags(messageId: ObjectID, tags: Tag[]) {
+      return updateTagsMessage;
     }
 
     delete(messageId: ObjectId, sender: ObjectId) {
@@ -317,6 +350,16 @@ describe('MessageLogic', () => {
         resolved: false,
         likes: [],
       };
+    }
+
+    getMessagesByTags(
+      conversationIds: ObjectID[],
+      tags: Tag[],
+      limit: number,
+      startDate?: string,
+      endDate?: string,
+    ) {
+      return getMessagesByTagsResult;
     }
 
     getChatConversationMessages(
@@ -633,6 +676,7 @@ describe('MessageLogic', () => {
         likes: [],
         likesCount: 0,
         isSenderBlocked: false,
+        tags: [],
       });
 
       expect(safeguardingService.clean).toHaveBeenCalledTimes(1);
@@ -669,6 +713,7 @@ describe('MessageLogic', () => {
         deleted: false,
         resolved: false,
         likes: [],
+        tags: [],
         likesCount: 0,
         richContent: {
           reply: {
@@ -726,6 +771,7 @@ describe('MessageLogic', () => {
         deleted: false,
         resolved: false,
         likes: [],
+        tags: [],
         likesCount: 0,
         richContent: {
           giphy: {
@@ -781,6 +827,7 @@ describe('MessageLogic', () => {
         deleted: false,
         resolved: false,
         likes: [],
+        tags: [],
         likesCount: 0,
         richContent: {
           images: mockImages,
@@ -830,6 +877,7 @@ describe('MessageLogic', () => {
         deleted: false,
         resolved: false,
         likes: [],
+        tags: [],
         likesCount: 0,
         richContent: {
           attachments: mockAttachments,
@@ -879,6 +927,7 @@ describe('MessageLogic', () => {
         deleted: false,
         resolved: false,
         likes: [],
+        tags: [],
         likesCount: 0,
         richContent: {
           poll: mockPoll,
@@ -980,6 +1029,7 @@ describe('MessageLogic', () => {
         deleted: false,
         resolved: false,
         likes: [],
+        tags: [],
         likesCount: 0,
         richContent: {
           reply: {
@@ -1053,6 +1103,51 @@ describe('MessageLogic', () => {
     });
   });
 
+  describe('updateTags', () => {
+    it('should update message tags with pusher implementation', async () => {
+      jest.spyOn(messageData, 'updateTags');
+      jest.spyOn(permissionsService, 'messagePermissions');
+      const result = await messageLogic.updateTags(
+        {
+          conversationId: conversationId,
+          messageId: messageId,
+          tags: mockTags,
+        },
+        validUser,
+      );
+
+      const updateTagEvent = new UpdateMessageTagsEvent({
+        messageId: result.id,
+        tags: mockTags,
+      });
+
+      expect(permissionsService.messagePermissions).toHaveBeenCalledTimes(1);
+      expect(messageData.updateTags).toHaveBeenCalledTimes(1);
+      expect(conversationChannel.send).toHaveBeenCalledWith(
+        updateTagEvent,
+        conversationId.toHexString(),
+      );
+      expect(conversationChannel.send).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual(updateTagsMessage);
+    });
+
+    it('should throw exception if user is not authorised', async () => {
+      const result = messageLogic.updateTags(
+        {
+          conversationId: conversationId,
+          messageId: messageId,
+          tags: mockTags,
+        },
+        { ...validUser, userId: UNAUTHORISED_USER },
+      );
+
+      expect(result).rejects.toThrow(
+        'User is not authorised to update this message',
+      );
+    });
+  });
+
   describe('getMessage', () => {
     it('should be able to get a message', async () => {
       const result = await messageLogic.getMessage(replyMessageId, validUser);
@@ -1069,6 +1164,49 @@ describe('MessageLogic', () => {
       await expect(result).rejects.toThrow(
         'User is not authorised to read this message',
       );
+    });
+  });
+
+  describe('getMessageByTags', () => {
+    it('should be defined', () => {
+      expect(messageLogic.getMessagesByTags).toBeDefined();
+    });
+
+    it('should be able to get messages by tag', async () => {
+      jest.spyOn(messageData, 'getMessagesByTags');
+      jest.spyOn(permissionsService, 'conversationPermissions');
+      const result = await messageLogic.getMessagesByTags(
+        {
+          conversationIds: [conversationId],
+          tags: mockTags,
+          limit: 2,
+        },
+        validUser,
+      );
+
+      expect(permissionsService.conversationPermissions).toHaveBeenCalledTimes(1);
+      expect(messageData.getMessagesByTags).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual(getMessagesByTagsResult);
+    });
+
+    it('should throw exception if user is not authorized', async () => {
+      jest.spyOn(permissionsService, 'conversationPermissions')
+        .mockImplementationOnce(() => {
+          return Promise.resolve(false);
+        });
+      const result = messageLogic.getMessagesByTags(
+        {
+          conversationIds: [conversationId],
+          tags: mockTags,
+          limit: 2,
+        },
+        { ...validUser, userId: UNAUTHORISED_USER },
+      );
+
+      expect(result)
+        .rejects
+        .toThrow(`User is not authorised to read this conversation: ${conversationId.toHexString()}`);
     });
   });
 

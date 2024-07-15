@@ -7,10 +7,50 @@ export const sendConversationMessageMutation = gql`
       text
       created
       resolved
+      tags {
+        id
+        type
+      }
       sender {
         id
       }
       deleted
+    }
+  }
+`;
+
+export const updateConversationMessageTagsMutation = gql`
+  mutation ($updateMessageTagsDto: UpdateMessageTagsDto!) {
+    updateConversationMessageTags(updateMessageTagsDto: $updateMessageTagsDto) {
+      id
+      text
+      created
+      resolved
+      tags {
+        id
+        type
+      }
+      sender {
+        id
+      }
+      deleted
+    }
+  }
+`;
+
+export const getChatConversationMessagesByTags = gql`
+  query ($getMessagesByTagsDto: GetMessagesByTagsDto!) {
+    getChatMessagesByTags(getMessagesByTagsDto: $getMessagesByTagsDto) {
+      _id
+      messages {
+        message
+        senderId
+        tags {
+          id
+          type
+        }
+      }
+      tagId
     }
   }
 `;

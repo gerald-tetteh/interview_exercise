@@ -1,4 +1,4 @@
-import { Tag } from './CreateChatConversation.dto';
+import { Tag } from '../../utils/dto.utils';
 import { ObjectID } from 'mongodb';
 import { Document } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';

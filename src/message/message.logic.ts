@@ -1,6 +1,7 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import {
   ChatMessage,
+  FilteredByTagChatMessages,
   PaginatedChatMessages,
   PollOption,
   RichMessageContent,
@@ -13,6 +14,8 @@ import {
   ResolveMessageDto,
   ReactionDto,
   PollOptionDto,
+  UpdateMessageTagsDto,
+  GetMessagesByTagsDto,
 } from './models/message.dto';
 import { MessageData } from './message.data';
 import { IAuthenticatedUser } from '../authentication/jwt.strategy';
@@ -29,6 +32,7 @@ import {
   UnresolveMessageEvent,
   ReactedMessageEvent,
   UnReactedMessageEvent,
+  UpdateMessageTagsEvent,
 } from '../conversation/conversation-channel.socket';
 import { UserService } from '../user/user.service';
 import { ConversationData } from '../conversation/conversation.data';
@@ -145,12 +149,41 @@ export class MessageLogic implements IMessageLogic {
       richContent: await this.mapRichContent(messageDto, message),
       resolved: message.resolved,
       isSenderBlocked: false,
+      tags: message.tags,
     });
 
     this.conversationChannel.send(sendMessageEvent, conversationId);
     sender.accountRole = accountRole;
 
     return message;
+  }
+
+  async updateTags(
+    updateMessageTagsDto: UpdateMessageTagsDto,
+    authenticatedUser: IAuthenticatedUser,
+  ): Promise<ChatMessage> {
+    if (
+      !(await this.permissions.messagePermissions({
+        user: authenticatedUser,
+        messageId: String(updateMessageTagsDto.messageId),
+        action: Action.updateMessage,
+      }))
+    ) {
+      throw new ForbiddenError(`User is not authorised to update this message`);
+    }
+    const conversationId = updateMessageTagsDto.conversationId.toHexString();
+    const updatedMessage = await this.messageData.updateTags(
+      updateMessageTagsDto.messageId,
+      updateMessageTagsDto.tags,
+    );
+    const updateTagEvent = new UpdateMessageTagsEvent({
+      messageId: updatedMessage.id,
+      tags: updatedMessage.tags ?? [],
+    });
+
+    this.conversationChannel.send(updateTagEvent, conversationId);
+
+    return updatedMessage;
   }
 
   private async mapRichContent(
@@ -239,6 +272,30 @@ export class MessageLogic implements IMessageLogic {
     }
 
     return this.messageData.getMessage(messageId.toHexString());
+  }
+
+  async getMessagesByTags(
+    getMessagesByTagsDto: GetMessagesByTagsDto,
+    authenticatedUser: IAuthenticatedUser,
+  ): Promise<FilteredByTagChatMessages[]> {
+    for(var conversationId of getMessagesByTagsDto.conversationIds) {
+      if (
+        !(await this.permissions.conversationPermissions({
+          user: authenticatedUser,
+          conversationId: String(conversationId),
+          action: Action.readConversation,
+        }))
+      ) {
+        throw new ForbiddenError(`User is not authorised to read this conversation: ${conversationId.toHexString()}`);
+      }
+    }
+    return await this.messageData.getMessagesByTags(
+      getMessagesByTagsDto.conversationIds,
+      getMessagesByTagsDto.tags,
+      getMessagesByTagsDto.limit,
+      getMessagesByTagsDto.startDate,
+      getMessagesByTagsDto.endDate,
+    );
   }
 
   private async getBlockedUserIds(

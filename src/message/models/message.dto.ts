@@ -6,6 +6,7 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import { ObjectID } from 'mongodb';
+import { TagType } from '../../utils/dto.utils';
 
 export enum GifType {
   Gif = 'gif',
@@ -109,6 +110,18 @@ export class RichContentDto {
 }
 
 @InputType()
+export class TagDto {
+  @Field({ nullable: true })
+  _id?: ObjectID;
+
+  @Field()
+  id: string;
+
+  @Field(() => TagType)
+  type: TagType;
+}
+
+@InputType()
 export class MessageDto {
   @Field()
   text: string;
@@ -118,6 +131,9 @@ export class MessageDto {
 
   @Field(() => RichContentDto, { nullable: true })
   richContent?: RichContentDto;
+
+  @Field(() => [TagDto], { defaultValue: [], nullable: true })
+  tags?: TagDto[];
 }
 
 // TODO Min - Max on limit
@@ -131,6 +147,36 @@ export class GetMessageDto {
 
   @Field({ defaultValue: 40 })
   limit: number;
+}
+
+@InputType()
+export class GetMessagesByTagsDto {
+  @Field(() => [ObjectID])
+  conversationIds: ObjectID[];
+
+  @Field(() => [TagDto])
+  tags: TagDto[];
+
+  @Field({ defaultValue: 40 })
+  limit: number;
+
+  @Field({ nullable: true })
+  startDate?: string;
+
+  @Field({ nullable: true })
+  endDate?: string;
+}
+
+@InputType()
+export class UpdateMessageTagsDto {
+  @Field()
+  conversationId: ObjectID;
+
+  @Field()
+  messageId: ObjectID;
+
+  @Field(() => [TagDto])
+  tags: TagDto[];
 }
 
 @InputType()

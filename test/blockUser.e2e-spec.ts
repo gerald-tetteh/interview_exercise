@@ -81,6 +81,7 @@ describe('Block User Functionality', () => {
         created: expect.anything(),
         deleted: false,
         resolved: false,
+        tags: [],
       });
     }
   });
@@ -157,6 +158,7 @@ describe('Block User Functionality', () => {
           sender: { id: blockedMemberId },
           deleted: false,
           resolved: false,
+          tags: [],
         },
       });
     }

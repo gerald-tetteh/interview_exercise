@@ -4,6 +4,7 @@ import { UserField, MessageSender } from '../../user/models/user.model';
 import { ChatConversation } from '../../conversation/models/ChatConversation.entity';
 import { AttachmentType, GifType } from './message.dto';
 import { Reaction } from './message.model';
+import { Tag } from '../../utils/dto.utils';
 
 class ReplyMessageSocket {
   text?: string;
@@ -15,6 +16,18 @@ class ReplyMessageSocket {
   richContent?: RichMessageContent;
 
   deleted?: boolean;
+}
+
+@ObjectType()
+class FilteredByTagMessage { 
+  @Field()
+  message: string;
+
+  @Field()
+  senderId: string;
+
+  @Field(() => [Tag])
+  tags: Tag[];
 }
 
 @ObjectType()
@@ -148,6 +161,9 @@ export class ChatMessage {
 
   @Field({ defaultValue: false, nullable: true })
   isSenderBlocked?: boolean;
+
+  @Field(() => [Tag], { defaultValue: [], nullable: true })
+  tags?: Tag[];
 }
 
 /***
@@ -176,6 +192,8 @@ export class SocketChatMessage {
   reactions?: Reaction[];
 
   isSenderBlocked?: boolean;
+
+  tags?: Tag[];
 }
 
 @ObjectType()
@@ -185,4 +203,16 @@ export class PaginatedChatMessages {
 
   @Field()
   hasMore: boolean;
+}
+
+@ObjectType()
+export class FilteredByTagChatMessages {
+  @Field(() => [String])
+  _id: string[];
+
+  @Field(() => [FilteredByTagMessage])
+  messages: FilteredByTagMessage[];
+
+  @Field(() => [String])
+  tagId: string[];
 }

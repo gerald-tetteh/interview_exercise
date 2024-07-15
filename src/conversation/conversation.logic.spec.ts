@@ -22,11 +22,7 @@ import { ConversationChannel } from './conversation-channel.socket';
 import { SafeguardingService } from '../safeguarding/safeguarding.service';
 import { UserService } from '../user/user.service';
 import { BaseEventType } from '../sockets/sockets.service';
-import {
-  CreateChatConversationDto,
-  Tag,
-  TagType,
-} from './models/CreateChatConversation.dto';
+import { CreateChatConversationDto } from './models/CreateChatConversation.dto';
 import { FilterQuery } from 'mongoose';
 import { AddMemberDTO } from './models/AddMember.dto';
 import { LastMessageInput, LastMessageOutput } from './models/lastMessage.dto';
@@ -39,6 +35,7 @@ import {
   MessageGroupedByConversationOutput,
   MessagesFilterInput,
 } from './models/messagesFilterInput';
+import { Tag, TagType } from '../utils/dto.utils';
 
 class MockedConversationData implements IConversationData {
   addMember(

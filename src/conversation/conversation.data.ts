@@ -16,10 +16,7 @@ import {
   LastReadModel,
   lastReadDocumentToObject,
 } from './models/lastRead.model';
-import {
-  CreateChatConversationDto,
-  Tag,
-} from './models/CreateChatConversation.dto';
+import { CreateChatConversationDto } from './models/CreateChatConversation.dto';
 import { AddMemberDTO } from './models/AddMember.dto';
 import { LastRead } from './models/LastRead.entity';
 import { LastReadInput } from './models/LastReadInput.dto';
@@ -29,6 +26,7 @@ import { UnreadCountInput, UnreadCountOutput } from './models/unreadCount.dto';
 import { LastMessageInput, LastMessageOutput } from './models/lastMessage.dto';
 import { MessageData } from '../message/message.data';
 import { ChatMessage } from '../message/models/message.entity';
+import { Tag } from '../utils/dto.utils';
 
 export interface IConversationData {
   addMember(

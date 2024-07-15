@@ -10,11 +10,14 @@ import {
   unlikeConversationMessage,
   resolveConversationMessage,
   unresolveConversationMessage,
+  updateConversationMessageTagsMutation,
+  getChatConversationMessagesByTags,
 } from './helpers/gqlSnipetts';
 import {
   createConversationForTest,
   createConversationWithCommunityPermissions,
 } from './helpers/conversation.utils';
+import { Tag, TagType } from '../src/utils/dto.utils';
 
 const dummyUserId = '597cfa3ac88c22000a74d167';
 
@@ -70,6 +73,7 @@ describe('Message', () => {
       resolved: false,
       created: expect.anything(),
       deleted: false,
+      tags: [],
     });
 
     // Assert that the time the message was sent is after the testDate
@@ -264,6 +268,73 @@ describe('Message', () => {
           likesCount: 1,
         }),
       );
+    });
+  });
+
+  describe('Message Tags', () => {
+    it('user can update message tags', async () => {
+      const { id: conversationId } = await createConversationForTest();
+      const message = await client.request(sendConversationMessageMutation, {
+        messageDto: {
+          text: `Message to resolve`,
+          conversationId: conversationId,
+        },
+      });
+
+      expect(message.sendConversationMessage.tags).toEqual([]);
+
+      const updatedMessage = await client.request(
+        updateConversationMessageTagsMutation,
+        {
+          updateMessageTagsDto: {
+            conversationId: conversationId,
+            messageId: message.sendConversationMessage.id,
+            tags: [{ id: 'course', type: TagType.subTopic }],
+          },
+        },
+      );
+
+      expect(updatedMessage.updateConversationMessageTags.tags).toEqual([
+        { id: 'course', type: TagType.subTopic },
+      ]);
+    });
+
+    it('users should be able to get messages by tags', async () => {
+      const { id: conversationId } = await createConversationForTest();
+      const message = await client.request(sendConversationMessageMutation, {
+        messageDto: {
+          text: `Message to resolve`,
+          conversationId: conversationId,
+          tags: [{ _id: "66954d19a21e1ea4481d9c8b", id: 'course', type: TagType.subTopic }],
+        },
+      });
+
+      expect(message.sendConversationMessage.tags).toEqual([{ id: 'course', type: TagType.subTopic }]);
+
+      const result = await client.request(
+        getChatConversationMessagesByTags, 
+        {
+          getMessagesByTagsDto: {
+            conversationIds: [conversationId],
+            tags: [{ _id: "66954d19a21e1ea4481d9c8b", id: 'course', type: TagType.subTopic }],
+            limit: 2,
+          },
+        },
+      );
+
+      expect(result.getChatMessagesByTags).toEqual([
+        {
+          _id: ["course"],
+          messages: [
+            {
+              message: "Message to resolve",
+              senderId: "597cfa3ac88c22000a74d167",
+              tags: [{ id: 'course', type: TagType.subTopic }],
+            },
+          ],
+          tagId: ["course"],
+        }
+      ]);
     });
   });
 

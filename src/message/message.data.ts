@@ -6,11 +6,12 @@ import {
   chatMessageToObject,
   ChatMessageModel,
 } from './models/message.model';
-import { ChatMessage, PaginatedChatMessages } from './models/message.entity';
+import { ChatMessage, FilteredByTagChatMessages, PaginatedChatMessages } from './models/message.entity';
 import { MessageDto, GetMessageDto } from './models/message.dto';
 import { ObjectID } from 'mongodb';
 import { createRichContent } from './utils/message.helper';
 import { MessageGroupedByConversationOutput } from '../conversation/models/messagesFilterInput';
+import { Tag } from '../utils/dto.utils';
 
 @Injectable()
 export class MessageData {
@@ -26,6 +27,7 @@ export class MessageData {
     const chatMessage = new this.chatMessageModel();
     chatMessage.text = data.text;
     chatMessage.senderId = senderId;
+    chatMessage.tags = data.tags ?? [];
     chatMessage.conversationId = data.conversationId;
     chatMessage.created = new Date();
     chatMessage.deleted = false;
@@ -260,11 +262,73 @@ export class MessageData {
     return this.getMessage(messageId.toHexString());
   }
 
+  async updateTags(
+    messageId: ObjectID,
+    tags: Tag[],
+  ): Promise<ChatMessageModel> {
+    const updatedMessage = await this.chatMessageModel.findOneAndUpdate(
+      { _id: messageId },
+      { $set: { tags: tags } },
+      { new: true },
+    );
+    if (!updatedMessage) throw new Error('Could not update tags on message');
+    return chatMessageToObject(updatedMessage);
+  }
+
   async getMessages(ids: ObjectID[]): Promise<ChatMessage[]> {
     const chatMessages = await this.chatMessageModel.find({
       _id: { $in: ids },
     });
     return chatMessages.map((chatMessage) => chatMessageToObject(chatMessage));
+  }
+
+  async getMessagesByTags(
+    conversationIds: ObjectID[],
+    tags: Tag[],
+    limit: number,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<FilteredByTagChatMessages[]> {
+    const matchQuery: FilterQuery<ChatMessage> = {
+      $match: {
+        conversationId: {
+          $in: conversationIds,
+        },
+        tags: {
+          $in: tags,
+        }
+      },
+    };
+
+    if (startDate && endDate) {
+      matchQuery['$match']['created'] = {
+        $gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+      };
+    }
+    const groupedChatMessages = await this.chatMessageModel.aggregate<FilteredByTagChatMessages>([
+      matchQuery,
+      {
+        $group: {
+          _id: "$tags.id", 
+          messages: {
+            $push: {
+              senderId: { $toString: "$senderId" }, 
+              message: "$text", 
+              tags: "$tags" 
+            } 
+          } 
+        } 
+      },
+      {
+        $project: {
+          tagId: "$_id", 
+          messages: 1 
+        } 
+      },
+      { $limit: limit }
+    ]);
+    return groupedChatMessages;
   }
 
   async getMessagesGroupedByConversation(

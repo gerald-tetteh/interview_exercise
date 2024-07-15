@@ -12,10 +12,12 @@ import {
   LikeMessageDto,
   ReactionDto,
   PollDto,
+  UpdateMessageTagsDto,
+  GetMessagesByTagsDto,
 } from './models/message.dto';
 import { ObjectID } from 'mongodb';
 import { IAuthenticatedUser } from '../authentication/jwt.strategy';
-import { ChatMessage, PaginatedChatMessages } from './models/message.entity';
+import { ChatMessage, FilteredByTagChatMessages, PaginatedChatMessages } from './models/message.entity';
 import { SafeguardingService } from '../safeguarding/safeguarding.service';
 import {
   ChatMessageDataLoader,
@@ -25,6 +27,7 @@ import {
   MessagesFilterInput,
   MessageGroupedByConversationOutput,
 } from '../conversation/models/messagesFilterInput';
+import { Tag, TagType } from '../utils/dto.utils';
 
 const conversationId = new ObjectID('5fe0cce861c8ea54018385af');
 const messageId = new ObjectID('5fe0cce861c8ea54018386ab');
@@ -39,6 +42,9 @@ const authenticatedUser: IAuthenticatedUser = {
   accountRole: 'admin',
 };
 
+const tag1 = new Tag();
+tag1.id = 'tag1';
+tag1.type = TagType.subTopic;
 const chatMessage: ChatMessage = {
   id: messageId,
   text: 'hey',
@@ -83,6 +89,32 @@ describe('MessageResolver', () => {
       authenticatedUser?: IAuthenticatedUser,
     ): Promise<ChatMessage> {
       return Promise.resolve(chatMessage);
+    }
+
+    updateTags(
+      updateMessageTagsDto: UpdateMessageTagsDto,
+      authenticatedUser: IAuthenticatedUser,
+    ): Promise<ChatMessage> {
+      return Promise.resolve(chatMessage);
+    }
+
+    getMessagesByTags(
+      getMessagesByTagsDto: GetMessagesByTagsDto,
+      authenticatedUser: IAuthenticatedUser,
+    ): Promise<FilteredByTagChatMessages[]> {
+      return Promise.resolve([
+        {
+          _id: ["tag1"],
+          messages: [
+            {
+              message: "Hello world",
+              senderId: senderId.toHexString(),
+              tags: [tag1],
+            },
+          ],
+          tagId: ["tag1"],
+        }
+      ]);
     }
 
     like(
@@ -371,6 +403,50 @@ describe('MessageResolver', () => {
           text: 'a reply message',
         },
       ]);
+    });
+  });
+
+  describe('update tags', () => {
+    it('should update message tags', async () => {
+      jest.spyOn(messageLogic, "updateTags");
+
+      const dto: UpdateMessageTagsDto = {
+        conversationId: conversationId,
+        messageId: messageId,
+        tags: [tag1],
+      }
+
+      resolver.updateConversationMessageTags(dto, authenticatedUser);
+      expect(messageLogic.updateTags).toBeCalledWith(
+        {
+          conversationId: conversationId,
+          messageId: messageId,
+          tags: [tag1],
+        }, 
+        { accountRole: 'admin', userId },
+      );
+    });
+  });
+
+  describe('get messages by tags', () => {
+    it('should get messages by tags', async () => {
+      jest.spyOn(messageLogic, "getMessagesByTags");
+
+      const dto: GetMessagesByTagsDto = {
+        conversationIds: [conversationId],
+        tags: [tag1],
+        limit: 2,
+      };
+
+      resolver.getChatMessagesByTags(dto, authenticatedUser);
+      expect(messageLogic.getMessagesByTags).toBeCalledWith(
+        {
+          conversationIds: [conversationId],
+          tags: [tag1],
+          limit: 2,
+        }, 
+        { accountRole: 'admin', userId },
+      );
     });
   });
 

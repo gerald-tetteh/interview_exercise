@@ -10,8 +10,8 @@ import { ConversationData } from './conversation.data';
 import { PermissionsService } from '../permissions/permissions.service';
 import { Action, Subject } from '../permissions/models/permissions.model';
 import { Product } from './models/ContextSchema.dto';
-import { Tag, TagType } from './models/CreateChatConversation.dto';
 import { DirectChatConversationDto } from './dto/DirectChatConversationDto';
+import { Tag, TagType } from '../utils/dto.utils';
 
 describe('ConversationController', () => {
   let conversationController: ConversationController;

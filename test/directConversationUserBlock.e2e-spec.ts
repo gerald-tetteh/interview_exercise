@@ -157,6 +157,7 @@ describe('Direct Conversation Block User Functionality', () => {
         sender: { id: userToConverseWith },
         deleted: false,
         resolved: false,
+        tags: [],
       },
     });
   });

@@ -23,30 +23,38 @@ enum ContextType {
   isNewsFeedConversation
 }
 
+type Tag {
+  _id: ObjectId!
+  id: String!
+  type: TagType!
+}
+
+"""ObjectId custom scalar type"""
+scalar ObjectId
+
+enum TagType {
+  subTopic
+}
+
 type Reaction {
   reaction: String!
   reactionUnicode: String!
   userIds: [String!]!
 }
 
-type ChatConversation {
-  id: ID!
-  unreadMessageCount: Int
-  lastMessage: ChatMessage
-  pinnedMessages: [ChatMessage!]!
-  pinnedMessagesCount: Int!
-}
-
 type UserField {
   id: String
+}
+
+type FilteredByTagMessage {
+  message: String!
+  senderId: String!
+  tags: [Tag!]!
 }
 
 type ReplyMessage {
   id: ObjectId!
 }
-
-"""ObjectId custom scalar type"""
-scalar ObjectId
 
 type Giphy {
   id: String!
@@ -107,6 +115,7 @@ type ChatMessage {
   richContent: RichMessageContent
   reactions: [Reaction!]
   isSenderBlocked: Boolean
+  tags: [Tag!]
 }
 
 """
@@ -117,6 +126,20 @@ scalar DateTime
 type PaginatedChatMessages {
   messages: [ChatMessage!]!
   hasMore: Boolean!
+}
+
+type FilteredByTagChatMessages {
+  _id: [String!]!
+  messages: [FilteredByTagMessage!]!
+  tagId: [String!]!
+}
+
+type ChatConversation {
+  id: ID!
+  unreadMessageCount: Int
+  lastMessage: ChatMessage
+  pinnedMessages: [ChatMessage!]!
+  pinnedMessagesCount: Int!
 }
 
 type LastRead {
@@ -137,6 +160,7 @@ type Query {
   getChatConversation(id: String!): ChatConversation!
   getMessagesForChatConversation(getMessageDto: GetMessageDto!): [ChatMessage!]! @deprecated(reason: "This query has now been deprecated, please use getChatConversationMessages")
   getChatConversationMessages(getMessageDto: GetMessageDto!): PaginatedChatMessages!
+  getChatMessagesByTags(getMessagesByTagsDto: GetMessagesByTagsDto!): [FilteredByTagChatMessages!]!
   conversationInboxDoNotUse: [ConversationInbox!]! @deprecated(reason: "Do not use query. See implementation for more details.")
 }
 
@@ -144,6 +168,20 @@ input GetMessageDto {
   conversationId: ObjectId!
   offsetId: ObjectId
   limit: Int = 40
+}
+
+input GetMessagesByTagsDto {
+  conversationIds: [ObjectId!]!
+  tags: [TagDto!]!
+  limit: Int = 40
+  startDate: String
+  endDate: String
+}
+
+input TagDto {
+  _id: ObjectId
+  id: String!
+  type: TagType!
 }
 
 type Mutation {
@@ -155,6 +193,7 @@ type Mutation {
   resolveConversationMessage(resolveMessageDto: ResolveMessageDto!): ChatMessage!
   unresolveConversationMessage(resolveMessageDto: ResolveMessageDto!): ChatMessage!
   likeConversationMessage(likeMessageDto: LikeMessageDto!): ChatMessage!
+  updateConversationMessageTags(updateMessageTagsDto: UpdateMessageTagsDto!): ChatMessage!
   unlikeConversationMessage(likeMessageDto: LikeMessageDto!): ChatMessage!
   addReactionToMessage(reactionDto: ReactionDto!): ChatMessage!
   removeReactionFromMessage(reactionDto: ReactionDto!): ChatMessage!
@@ -181,6 +220,7 @@ input MessageDto {
   text: String!
   conversationId: ObjectId!
   richContent: RichContentDto
+  tags: [TagDto!] = []
 }
 
 input RichContentDto {
@@ -239,6 +279,12 @@ input LikeMessageDto {
   userId: ObjectId!
   messageId: ObjectId!
   conversationId: ObjectId!
+}
+
+input UpdateMessageTagsDto {
+  conversationId: ObjectId!
+  messageId: ObjectId!
+  tags: [TagDto!]!
 }
 
 input ReactionDto {

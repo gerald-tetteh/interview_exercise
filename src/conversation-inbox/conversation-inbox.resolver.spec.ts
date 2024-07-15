@@ -8,10 +8,7 @@ import {
   Product,
 } from '../conversation/models/ContextSchema.dto';
 import { ChatConversationModel } from '../conversation/models/conversation.model';
-import {
-  CreateChatConversationDto,
-  Tag,
-} from '../conversation/models/CreateChatConversation.dto';
+import { CreateChatConversationDto } from '../conversation/models/CreateChatConversation.dto';
 import {
   LastMessageInput,
   LastMessageOutput,
@@ -36,6 +33,7 @@ import {
   MessagesFilterInput,
   MessageGroupedByConversationOutput,
 } from '../conversation/models/messagesFilterInput';
+import { Tag } from '../utils/dto.utils';
 
 class ConversationLogicMocked implements IConversationLogic {
   getConversation(
